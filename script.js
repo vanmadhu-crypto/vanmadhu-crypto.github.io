@@ -1,4 +1,53 @@
 const avatar = document.querySelector(".avatar-image");
+const progressBar = document.querySelector("#scroll-progress-bar");
+const pageSections = [...document.querySelectorAll("main [data-section-number]")];
+const sectionLinks = [...document.querySelectorAll('.main-nav a[href^="#"]')];
+
+function updateScrollProgress() {
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  const percent = maxScroll > 0 ? Math.min((window.scrollY / maxScroll) * 100, 100) : 0;
+  if (progressBar) progressBar.style.width = `${percent}%`;
+
+  const marker = window.scrollY + window.innerHeight * 0.4;
+  let active = null;
+  pageSections.forEach((section) => {
+    if (section.offsetTop <= marker) active = section;
+  });
+  sectionLinks.forEach((link) => {
+    if (active && link.getAttribute("href") === `#${active.id}`) link.setAttribute("aria-current", "location");
+    else link.removeAttribute("aria-current");
+  });
+}
+
+let scrollPending = false;
+window.addEventListener("scroll", () => {
+  if (scrollPending) return;
+  scrollPending = true;
+  window.requestAnimationFrame(() => {
+    updateScrollProgress();
+    scrollPending = false;
+  });
+}, { passive: true });
+window.addEventListener("resize", updateScrollProgress);
+updateScrollProgress();
+
+const revealTargets = [...document.querySelectorAll(".section-kicker, .intro-content, .experience-card, .education-card, .learning-list, .community-card, .contact-copy")];
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (!reduceMotion && "IntersectionObserver" in window) {
+  document.documentElement.classList.add("motion-ready");
+  const revealObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+  revealTargets.forEach((element, index) => {
+    element.dataset.reveal = "";
+    element.style.setProperty("--reveal-delay", `${(index % 3) * 70}ms`);
+    revealObserver.observe(element);
+  });
+}
 
 if (avatar) {
   avatar.addEventListener("error", () => {
